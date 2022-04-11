@@ -1,0 +1,55 @@
+version: "3.3"
+services:
+  db:
+    image: mysql:5.7
+    # platform: linux/amd64
+    platform: linux/x86_64
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+        - ./mysql-dump:/docker-entrypoint-initdb.d/
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      # MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_DATABASE: hello_world_development
+      # MYSQL_USER: root
+      MYSQL_PASSWORD: password
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # dockerfile: docker/staging/Dockerfile"
+    image: hello_world
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    volumes:
+      - .:/app:cached
+      - bundle:/usr/local/bundle:delegated
+      - node_modules:/app/node_modules
+      - tmp-data:/app/tmp/sockets
+    environment:
+      RAILS_ENV: development
+      # DB_HOST: db:3308
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: hello_world_development
+    ports:
+      - "3000:3000"
+    # platform: linux/amd64
+    platform: linux/x86_64
+    tty: true
+    stdin_open: true
+    depends_on:
+      - db
+
+volumes:
+  mysql:
+  bundle:
+  node_modules:
+  tmp-data:
+
+
+# docker-compose run web --rm
+# docker build . -t hello_world --platform linux/amd64
+# docker run --rm --platform linux/amd64 -p 3000:80 --cpus=2 -m 512m --memory-reservation=256m hello_world
